@@ -1,5 +1,7 @@
 # wordpress-migration
 
+**Español** · [English](README.en.md)
+
 Migración de la web de **Nortia Reformas** (`../wordpress-original`) a **Astro + WordPress headless**, y kit reutilizable para migrar otras webs WordPress de la misma forma.
 
 - **WordPress no cambia**: el cliente sigue editando en el mismo panel. Solo se le instala un plugin pequeño (`headless-connector`) que expone el contenido.
@@ -25,7 +27,7 @@ Migración de la web de **Nortia Reformas** (`../wordpress-original`) a **Astro 
 | `astro/src/site/` | **Todo lo específico del cliente**: plantillas, shortcodes, componentes propios y `config.ts` (botón de la cabecera y datos de contacto del pie) |
 | `scripts/` | Instalación del conector, inventario, verificación de URLs y Lighthouse |
 | `scripts/audit/` | Fragmentos para auditar cualquier web (métricas, seguridad pasiva, rastreo de enlaces) |
-| `docs/` | Guías para personas y agentes: migración, auditoría y plantilla de informe |
+| `docs/` | Guías para personas y agentes: migración, auditoría y plantilla de informe (en inglés en `docs/en/`) |
 
 ## Puesta en marcha
 
@@ -109,9 +111,9 @@ Tokens de color, radios y sombras en `:root` de `astro/src/styles/global.css`; t
 ## Pendiente / límites conocidos
 
 - **Vista previa de borradores**: el sitio es estático; ver un borrador requiere un modo servidor (Astro SSR en una ruta `/preview`) o un entorno de staging. No implementado.
-- **Publicación**: cada cambio en WordPress necesita un nuevo build. El conector llama a `headless_build_hook` al publicar (configúralo con la URL de build de tu hosting o CI).
+- **Publicación**: cada cambio en WordPress necesita un nuevo build. El conector llama a `headless_build_hook` al publicar o actualizar contenido, y al cambiar menús, categorías, ajustes del sitio o el estado de un comentario (configúralo con la URL de build de tu hosting o CI). Cambios solo en la Biblioteca de medios o en ajustes de plugins necesitan un build manual.
 - **Correo de los formularios**: en local, Contact Form 7 responde `mail_failed` porque no hay servidor de correo; los mensajes quedan en Flamingo. En producción hay que configurar WP Mail SMTP.
 - **Buscador**: la web original no tenía; si se necesita, añadir Pagefind al build.
 - **RSS** (`/feed/`): no se genera. Añadir `@astrojs/rss` si el cliente lo usa.
 - **Mapa de OpenStreetMap** (bloque HTML con iframe): se mantiene tal cual.
-- **Yoast**: el código lee su API, pero el entorno de prueba no tenía Yoast instalado. Comprueba títulos y schema con el WordPress de Docker.
+- **Página de autor sin entradas** (`/author/admin/`): WordPress la sirve y Astro no. Añadir una redirección 301 en el hosting.

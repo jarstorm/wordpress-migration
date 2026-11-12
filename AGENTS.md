@@ -9,6 +9,7 @@ Repositorio de migraciones **WordPress → Astro + WordPress headless** y de **a
 - `scripts/` — `install-connector.sh`, `inventory.mjs`, `check-urls.mjs`; `scripts/audit/` para auditorías.
 - `docs/MIGRATION-PLAYBOOK.md` — **léelo antes de migrar una web**.
 - `docs/AUDIT-PLAYBOOK.md` y `docs/REPORT-TEMPLATE.md` — **léelos antes de auditar una web o escribir un informe**.
+- `docs/en/` — las mismas guías en inglés. Al cambiar una guía, actualiza las dos versiones (y `README.md` / `README.en.md`).
 
 El WordPress de ejemplo está en `../wordpress-original` y **no se modifica**: el conector se instala con `scripts/install-connector.sh`.
 

@@ -1,5 +1,7 @@
 # Auditoría web — {dominio}
 
+**Español** · [English](en/REPORT-TEMPLATE.md) _(quita esta línea en el informe)_
+
 {fecha} · {autor}
 
 ## Resumen

@@ -1,5 +1,7 @@
 # Playbook: migrar una web WordPress a Astro + WordPress headless
 
+**Español** · [English](en/MIGRATION-PLAYBOOK.md)
+
 Guía paso a paso para que una persona o un agente de IA migre **otra** web WordPress con este kit. El ejemplo resuelto es Nortia Reformas (`../wordpress-original` → `astro/`).
 
 **Resultado esperado:** el cliente sigue editando en su WordPress; la web pública es HTML estático generado por Astro, con las **mismas URLs**, el mismo contenido y rendimiento de 90–100 en móvil.
@@ -80,10 +82,14 @@ Revisa además a mano:
 ## 3. Preparar el proyecto Astro
 
 1. Copia `astro/` a la nueva carpeta del cliente (o crea una rama).
-2. **Vacía `src/site/`** y vuelve a crear `shortcodes.ts` y `templates.ts` con los exports vacíos:
+2. **Vacía `src/site/`** y vuelve a crear `shortcodes.ts`, `templates.ts` y `config.ts`:
    ```ts
+   // shortcodes.ts
    export const siteShortcodes: Record<string, any> = {};
+   // templates.ts
    export function siteTemplate(entry) { return null; }
+   // config.ts: botón de la cabecera y datos de contacto del pie
+   export const siteConfig = { cta: { label: 'Contacto', href: '/contacto/' }, contact: { phone: '', phoneHref: '', email: '', address: '', hours: '' } };
    ```
 3. `.env`: `WP_URL` (WordPress) y `SITE_URL` (dominio final).
 4. `npm install && npm run build`. Con el código genérico ya deberían salir todas las URLs; lo que falte se ve en la siguiente fase.
@@ -111,7 +117,7 @@ Todo lo del cliente va en `src/site/`; lo reutilizable, en `src/components/`.
 | Bloque dinámico o de plugin que no se ve bien con su HTML | Componente en `src/components/blocks/` + `registry.ts`. |
 | Filtro `the_content` o plantilla PHP con campos ACF | Plantilla en `src/site/templates/` que envuelve `SingleTemplate` con los slots `before` y `after`; se elige en `src/site/templates.ts`. |
 | Tipo de contenido no público (equipo, testimonios) | `getList('tipo')` del conector (no requiere que sea público). |
-| Diseño | `src/styles/global.css` (variables en `:root`) y los componentes `Header`, `Footer`, `PostCard`. |
+| Diseño | Tokens de color, radios y tipografía en `:root` de `src/styles/global.css`; componentes `Header`, `Footer`, `PostCard`. Para cambiar la tipografía, sustituye el paquete `@fontsource-variable/...` en `BaseLayout.astro`. |
 
 **Regla:** si el HTML de WordPress de un bloque se ve bien con el CSS, no hagas componente. Haz componente solo para lógica (datos de otras entradas), imágenes críticas o cuando el HTML dependa de CSS/JS del plugin.
 
@@ -168,7 +174,7 @@ node ../scripts/audit/lighthouse.mjs https://cliente.es,http://localhost:4321 / 
    - Deja accesibles: `/wp-admin` (idealmente restringido por IP o con 2FA), `/wp-json/headless/v1` (puede protegerse con `headless_api_token` si el build corre en un CI con el token), `/wp-json/contact-form-7/`, `/wp-json/wp/v2/comments` y `/wp-content/uploads` (enlaces a PDF y otros ficheros).
    - Bloquea `xmlrpc.php` y la enumeración de usuarios (`/wp-json/wp/v2/users`).
    - Marca el subdominio como `noindex` (Ajustes → Lectura) para que Google no lo indexe.
-3. **Build automático:** pon la URL del *build hook* del hosting en WordPress: `wp option update headless_build_hook https://...`. Cada publicación lanza un build (1–3 minutos). Si hay entradas programadas, añade un build diario en el CI.
+3. **Build automático:** pon la URL del *build hook* del hosting en WordPress: `wp option update headless_build_hook https://...`. Cada publicación lanza un build (1–3 minutos), y también los cambios de menús, categorías, ajustes del sitio y estado de comentarios. Los cambios solo en la Biblioteca de medios o en ajustes de plugins necesitan un build manual. Si hay entradas programadas, configura un cron real del servidor para WP-Cron (con WordPress oculto apenas recibe visitas) o un build diario en el CI.
 4. **Cambio de DNS** del dominio principal al hosting estático. Mantén el WordPress antiguo intacto una semana para volver atrás.
 5. Tras el cambio: Search Console (enviar el sitemap nuevo y vigilar errores 404 durante 2–4 semanas).
 
@@ -194,6 +200,7 @@ node ../scripts/audit/lighthouse.mjs https://cliente.es,http://localhost:4321 / 
 | Imágenes que no se optimizan | Están en CSS (fondos) o en otro dominio. Muévelas a un bloque de imagen o añade el dominio a `image.remotePatterns`. |
 | El build tarda mucho | Muchas imágenes grandes: la primera vez se procesan todas; luego Astro las cachea en `node_modules/.astro`. Conserva esa caché en el CI. |
 | `WordPress respondió 401` | `headless_api_token` está definido y falta `WP_API_TOKEN` en `.env`. |
+| `No se puede conectar con WordPress` | WordPress no está arrancado o `WP_URL` en `.env` es incorrecta. |
 | Formulario con error de CORS | `headless_frontend_origin` no incluye el dominio desde el que se envía. |
 | Web local de WordPress muy lenta | Ver `wordpress-original/setup/diagnostico.sh` (suele ser Wordfence). |
 | Contenido de Elementor | `content` trae el HTML final, pero con clases y CSS de Elementor que no existen en Astro. No intentar reproducirlo: rediseñar. |

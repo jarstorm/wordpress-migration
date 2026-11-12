@@ -1,5 +1,7 @@
 # Playbook para agentes: auditar una web y hacer el informe para el cliente
 
+**Español** · [English](en/AUDIT-PLAYBOOK.md)
+
 Cómo escanear una web (normalmente WordPress) y convertir los hallazgos en un informe comercial: rendimiento, diseño y conversión, enlaces, SEO técnico y seguridad. Ejemplo real: el informe de *conmdemujer.es* (tienda de libros con WooCommerce y Elementor).
 
 **Objetivo del informe:** que el cliente entienda en 2 minutos qué le cuesta su web (ventas, visibilidad, riesgo) y qué propuestas hay, con números verificables. No es un informe técnico para desarrolladores.
