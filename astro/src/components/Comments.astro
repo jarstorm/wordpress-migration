@@ -1,0 +1,82 @@
+---
+/**
+ * Comentarios aprobados (generados en el build) y formulario que los envía a la
+ * API REST de WordPress. Quedan pendientes de moderación y aparecen en la web
+ * en el siguiente build.
+ */
+import type { CommentNode, Entry } from '../lib/types';
+import { WP_URL } from '../lib/wp';
+import { formatDate } from '../lib/format';
+
+interface Props {
+  entry: Entry;
+}
+
+const { entry } = Astro.props;
+const c = entry.comments;
+const render = (nodes: CommentNode[]): string =>
+  nodes
+    .map(
+      (n) => `<li class="comment"><article><header><strong>${n.author.replace(/</g, '&lt;')}</strong> <time datetime="${n.date}">${formatDate(n.date)}</time></header>${n.content}</article>${
+        n.children.length ? `<ol class="comments__children">${render(n.children)}</ol>` : ''
+      }</li>`,
+    )
+    .join('');
+---
+
+{
+  c && (c.count > 0 || c.open) && (
+    <section class="comments" aria-labelledby="comentarios">
+      <h2 id="comentarios">{c.count === 1 ? '1 comentario' : `${c.count} comentarios`}</h2>
+      {c.count > 0 && <ol class="comments__list" set:html={render(c.tree)} />}
+      {c.open && (
+        <form class="comment-form" data-endpoint={`${WP_URL}/wp-json/wp/v2/comments`} data-post={entry.id}>
+          <h3>Deja un comentario</h3>
+          <p class="comment-form__note">Tu email no se publicará. Los comentarios se revisan antes de aparecer.</p>
+          <label>
+            Comentario
+            <textarea name="content" required rows="5" />
+          </label>
+          <div class="comment-form__row">
+            <label>
+              Nombre
+              <input name="author_name" required autocomplete="name" />
+            </label>
+            <label>
+              Email
+              <input name="author_email" type="email" required autocomplete="email" />
+            </label>
+          </div>
+          <button class="btn" type="submit">
+            Publicar comentario
+          </button>
+          <p class="comment-form__status" role="status" aria-live="polite" />
+        </form>
+      )}
+    </section>
+  )
+}
+
+<script>
+  document.querySelectorAll<HTMLFormElement>('.comment-form').forEach((form) => {
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const status = form.querySelector<HTMLElement>('.comment-form__status')!;
+      const data = Object.fromEntries(new FormData(form));
+      status.textContent = 'Enviando…';
+      try {
+        const res = await fetch(form.dataset.endpoint!, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...data, post: Number(form.dataset.post) }),
+        });
+        const json = await res.json();
+        if (!res.ok) throw new Error(json.message);
+        status.textContent = 'Gracias. Tu comentario se publicará cuando se revise.';
+        form.reset();
+      } catch (e) {
+        status.textContent = `No se ha podido enviar el comentario. ${(e as Error).message ?? ''}`;
+      }
+    });
+  });
+</script>

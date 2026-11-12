@@ -1,0 +1,49 @@
+---
+import { getMenu, getSite } from '../lib/wp';
+import { siteConfig } from '../site/config';
+
+const site = await getSite();
+const main = await getMenu('primary');
+const legal = await getMenu('footer_menu');
+const year = new Date().getFullYear();
+const c = siteConfig.contact;
+---
+
+<footer class="site-footer">
+  <div class="container site-footer__grid">
+    <div class="site-footer__brand">
+      <p class="site-footer__name">{site.name}</p>
+      <p>{site.description}</p>
+      {siteConfig.cta && <a class="btn btn--light" href={siteConfig.cta.href}>{siteConfig.cta.label}</a>}
+    </div>
+    <nav aria-label="Secciones">
+      <p class="site-footer__title">Navegación</p>
+      <ul class="footer-nav">
+        {main.map((it) => <li><a href={it.path}>{it.title}</a></li>)}
+      </ul>
+    </nav>
+    {
+      c && (
+        <div>
+          <p class="site-footer__title">Contacto</p>
+          <ul class="footer-nav">
+            {c.phone && <li><a href={c.phoneHref}>{c.phone}</a></li>}
+            {c.email && <li><a href={`mailto:${c.email}`}>{c.email}</a></li>}
+            {c.address && <li>{c.address}</li>}
+            {c.hours && <li>{c.hours}</li>}
+          </ul>
+        </div>
+      )
+    }
+  </div>
+  <div class="container site-footer__bottom">
+    <p>© {year} {site.name}</p>
+    {
+      legal.length > 0 && (
+        <ul class="footer-legal">
+          {legal.map((it) => <li><a href={it.path}>{it.title}</a></li>)}
+        </ul>
+      )
+    }
+  </div>
+</footer>

@@ -1,0 +1,43 @@
+---
+/**
+ * Aviso de cookies propio (sustituye al plugin de WordPress).
+ * La web estática no usa cookies propias. Si se añade analítica, cárgala solo
+ * cuando window.cookieConsent === 'accepted' (evento "cookie-consent").
+ */
+---
+
+<div class="cookie-banner" hidden role="dialog" aria-live="polite" aria-label="Aviso de cookies">
+  <p>
+    Usamos cookies técnicas y, si nos das permiso, de análisis para mejorar la web.
+    <a href="/politica-de-cookies/">Más información</a>
+  </p>
+  <div class="cookie-banner__actions">
+    <button type="button" class="btn btn--ghost" data-consent="rejected">Rechazar</button>
+    <button type="button" class="btn" data-consent="accepted">Aceptar</button>
+  </div>
+</div>
+
+<script>
+  const KEY = 'cookie-consent';
+  const banner = document.querySelector<HTMLElement>('.cookie-banner');
+  let saved: string | null = null;
+  try {
+    saved = localStorage.getItem(KEY);
+  } catch {}
+  const apply = (value: string) => {
+    (window as any).cookieConsent = value;
+    window.dispatchEvent(new CustomEvent(KEY, { detail: value }));
+  };
+  if (saved) apply(saved);
+  else if (banner) banner.hidden = false;
+  banner?.querySelectorAll<HTMLButtonElement>('[data-consent]').forEach((b) =>
+    b.addEventListener('click', () => {
+      const value = b.dataset.consent!;
+      try {
+        localStorage.setItem(KEY, value);
+      } catch {}
+      apply(value);
+      banner.hidden = true;
+    }),
+  );
+</script>

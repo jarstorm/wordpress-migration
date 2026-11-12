@@ -1,0 +1,14 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSite } from '../lib/wp';
+
+const site = await getSite();
+---
+
+<BaseLayout title={`Página no encontrada | ${site.name}`} path="/404/" noindex>
+  <section class="container entry__header not-found">
+    <h1 class="entry__title">No encontramos esta página</h1>
+    <p>Puede que se haya movido o que ya no exista.</p>
+    <p><a class="btn" href="/">Volver al inicio</a></p>
+  </section>
+</BaseLayout>

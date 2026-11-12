@@ -1,0 +1,86 @@
+---
+/**
+ * Genera TODAS las URLs públicas de WordPress con las mismas rutas.
+ * La lista sale de /headless/v1/routes: entradas, páginas, tipos de contenido,
+ * archivos (blog, tipos, categorías, etiquetas, autores) y su paginación.
+ */
+import type { GetStaticPaths } from 'astro';
+import type { Route, Summary } from '../lib/types';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import SingleTemplate from '../templates/SingleTemplate.astro';
+import ArchiveTemplate from '../templates/ArchiveTemplate.astro';
+import { siteTemplate } from '../site/templates';
+import { getEntry, getList, getRoutes, getSite, getTerm } from '../lib/wp';
+import { pagePath } from '../lib/format';
+
+export const getStaticPaths = (async () => {
+  const { routes } = await getRoutes();
+  const paths: { params: { slug: string | undefined }; props: { route: Route; page: number } }[] = [];
+  for (const route of routes) {
+    const pages = route.kind === 'archive' ? Math.max(1, route.pages ?? 1) : 1;
+    for (let page = 1; page <= pages; page++) {
+      const path = pagePath(route.path, page);
+      const slug = path.replace(/^\/|\/$/g, '') || undefined;
+      paths.push({ params: { slug }, props: { route, page } });
+    }
+  }
+  return paths;
+}) satisfies GetStaticPaths;
+
+const { route, page } = Astro.props as { route: Route; page: number };
+const site = await getSite();
+const { posts_per_page } = await getRoutes();
+const path = pagePath(route.path, page);
+
+let layout: { title: string; description?: string | null; image?: string | null; schema?: unknown; type?: 'website' | 'article'; noindex?: boolean };
+let single: Awaited<ReturnType<typeof getEntry>> | null = null;
+let archive: { title: string; intro?: string | null; items: Summary[]; pages: number } | null = null;
+
+if (route.kind === 'single') {
+  single = await getEntry(route.id!);
+  layout = {
+    title: single.seo.title || (route.path === '/' ? `${site.name} | ${site.description}` : `${single.title} | ${site.name}`),
+    description: single.seo.description || single.excerpt || null,
+    image: single.seo.og_image || single.image?.url || null,
+    schema: single.seo.schema || undefined,
+    type: single.type === 'post' ? 'article' : 'website',
+  };
+} else {
+  const type = Array.isArray(route.type) ? route.type[0] : route.type;
+  let items: Summary[] = [];
+  let title = route.title ?? '';
+  let intro: string | null = null;
+  let seoTitle: string | null = null;
+  if (route.archive === 'term') {
+    items = await getList(type, { taxonomy: route.taxonomy, term: route.id });
+    const term = await getTerm(route.taxonomy!, route.id!);
+    intro = term.description || null;
+    seoTitle = term.seo.title;
+  } else if (route.archive === 'author') {
+    items = await getList('post', { author: route.id });
+    title = `Entradas de ${route.title}`;
+  } else {
+    items = await getList(type);
+  }
+  const pages = Math.max(1, Math.ceil(items.length / posts_per_page));
+  archive = { title, intro, items: items.slice((page - 1) * posts_per_page, page * posts_per_page), pages };
+  layout = {
+    title: `${seoTitle || title}${page > 1 ? ` – Página ${page}` : ''} | ${site.name}`,
+    description: intro,
+    // Las etiquetas y autores suelen ser contenido duplicado: no se indexan.
+    noindex: route.archive === 'author' || route.taxonomy === 'post_tag',
+  };
+}
+
+const Template = single ? (siteTemplate(single) ?? SingleTemplate) : null;
+---
+
+<BaseLayout {...layout} path={path}>
+  {
+    single ? (
+      <Template entry={single} site={site} isFront={route.path === '/'} />
+    ) : (
+      archive && <ArchiveTemplate title={archive.title} intro={archive.intro} base={route.path} items={archive.items} page={page} pages={archive.pages} />
+    )
+  }
+</BaseLayout>

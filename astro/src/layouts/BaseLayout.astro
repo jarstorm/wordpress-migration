@@ -1,0 +1,93 @@
+---
+import '@fontsource-variable/plus-jakarta-sans';
+import fontUrl from '@fontsource-variable/plus-jakarta-sans/files/plus-jakarta-sans-latin-wght-normal.woff2?url';
+import '../styles/global.css';
+import { getSite, toSiteUrl, WP_URL } from '../lib/wp';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CookieBanner from '../components/CookieBanner.astro';
+import { imageUrl } from '../lib/images';
+
+interface Props {
+  title: string;
+  description?: string | null;
+  /** Ruta de la página ("/servicios/"). */
+  path: string;
+  image?: string | null;
+  schema?: unknown;
+  type?: 'website' | 'article';
+  noindex?: boolean;
+}
+
+const { title, description, path, image, schema, type = 'website', noindex = false } = Astro.props;
+const site = await getSite();
+const siteUrl = (Astro.site?.toString() ?? site.url).replace(/\/$/, '');
+const canonical = `${siteUrl}${path}`;
+const lang = site.language?.split('-')[0] || 'es';
+const desc = description || site.description;
+// Imágenes servidas desde la web nueva, aunque WordPress quede oculto.
+const ogImage = image ? new URL(await imageUrl(image, 1200, 'jpg'), siteUrl).href : null;
+const icon = site.icon ? await imageUrl(site.icon.url, 64, 'png') : null;
+const logoUrl = site.logo ? new URL(await imageUrl(site.logo.url, 480, 'png'), siteUrl).href : undefined;
+/** Sustituye en el schema las imágenes de WordPress por copias servidas desde la web nueva. */
+async function localizeImages(value: unknown): Promise<unknown> {
+  if (typeof value === 'string') {
+    if (value.startsWith(`${WP_URL}/wp-content/`) && /\.(jpe?g|png|webp|gif)$/i.test(value)) {
+      return new URL(await imageUrl(value, 1200, value.endsWith('.png') ? 'png' : 'jpg'), siteUrl).href;
+    }
+    return value;
+  }
+  if (Array.isArray(value)) return Promise.all(value.map(localizeImages));
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value)) out[k] = await localizeImages(v);
+    return out;
+  }
+  return value;
+}
+const ld = await localizeImages(
+  schema ??
+  ({
+    '@context': 'https://schema.org',
+    '@type': type === 'article' ? 'Article' : 'WebPage',
+    name: title,
+    url: canonical,
+    description: desc,
+    publisher: { '@type': 'Organization', name: site.name, url: siteUrl, logo: logoUrl },
+  } as const),
+);
+---
+
+<!doctype html>
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="preload" href={fontUrl} as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#1c1917" />
+    <title>{title}</title>
+    {desc && <meta name="description" content={desc} />}
+    <link rel="canonical" href={canonical} />
+    {noindex && <meta name="robots" content="noindex, follow" />}
+    <meta property="og:locale" content={site.language?.replace('-', '_') || 'es_ES'} />
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title} />
+    {desc && <meta property="og:description" content={desc} />}
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content={site.name} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    {icon && <link rel="icon" href={icon} />}
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <script type="application/ld+json" set:html={JSON.stringify(toSiteUrl(ld, siteUrl))} />
+  </head>
+  <body>
+    <a class="skip-link" href="#contenido">Saltar al contenido</a>
+    <Header path={path} />
+    <main id="contenido">
+      <slot />
+    </main>
+    <Footer />
+    <CookieBanner />
+  </body>
+</html>

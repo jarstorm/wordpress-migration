@@ -1,0 +1,31 @@
+---
+import { pagePath } from '../lib/format';
+
+interface Props {
+  base: string;
+  page: number;
+  pages: number;
+}
+
+const { base, page, pages } = Astro.props;
+---
+
+{
+  pages > 1 && (
+    <nav class="pagination" aria-label="Paginación">
+      {page > 1 && (
+        <a href={pagePath(base, page - 1)} rel="prev">
+          ← Anteriores
+        </a>
+      )}
+      {Array.from({ length: pages }, (_, i) => i + 1).map((n) =>
+        n === page ? <span aria-current="page">{n}</span> : <a href={pagePath(base, n)}>{n}</a>,
+      )}
+      {page < pages && (
+        <a href={pagePath(base, page + 1)} rel="next">
+          Siguientes →
+        </a>
+      )}
+    </nav>
+  )
+}

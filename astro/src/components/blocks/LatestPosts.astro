@@ -1,0 +1,21 @@
+---
+/** Bloque "Últimas entradas" (core/latest-posts) pintado de forma nativa. */
+import type { Block } from '../../lib/types';
+import { getList } from '../../lib/wp';
+import PostCard from '../PostCard.astro';
+
+interface Props {
+  block: Block;
+  eager?: boolean;
+}
+
+const { block } = Astro.props;
+const a = block.attrs ?? {};
+const count = Number(a.postsToShow ?? 5);
+const posts = (await getList('post')).slice(0, count);
+const columns = a.postLayout === 'grid' ? Number(a.columns ?? 3) : 1;
+---
+
+<div class="card-grid" style={`--cols:${columns}`}>
+  {posts.map((p) => <PostCard item={p} showDate={a.displayPostDate !== false} showImage={!!a.displayFeaturedImage} />)}
+</div>

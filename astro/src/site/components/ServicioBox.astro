@@ -1,0 +1,41 @@
+---
+/** Recuadro de precio, plazo e "incluye" de las páginas de servicio (campos ACF). */
+import type { Entry } from '../../lib/types';
+
+interface Props {
+  entry: Entry;
+}
+
+const acf = Astro.props.entry.acf ?? {};
+const incluye = String(acf.incluye ?? '')
+  .split(/\r?\n/)
+  .map((s) => s.trim())
+  .filter(Boolean);
+const precio = acf.precio_desde ? new Intl.NumberFormat('es-ES', { useGrouping: 'always' } as any).format(Number(acf.precio_desde)) : null;
+---
+
+{
+  (precio || acf.plazo || incluye.length > 0) && (
+    <aside class="servicio-box">
+      {precio && (
+        <p class="servicio-box__precio">
+          Desde <strong>{precio} €</strong> <span>(IVA no incluido)</span>
+        </p>
+      )}
+      {acf.plazo && <p>Plazo orientativo: {acf.plazo}</p>}
+      {incluye.length > 0 && (
+        <>
+          <p class="servicio-box__label">Incluye</p>
+          <ul>
+            {incluye.map((i) => (
+              <li>{i}</li>
+            ))}
+          </ul>
+        </>
+      )}
+      <a class="btn" href="/contacto/">
+        Pide presupuesto
+      </a>
+    </aside>
+  )
+}

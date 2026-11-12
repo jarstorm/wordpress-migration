@@ -1,0 +1,35 @@
+---
+/** [nortia_proyectos limite="3" destacados="1"] */
+import { getList } from '../../lib/wp';
+import { imgFromMedia } from '../../lib/images';
+
+interface Props {
+  limite?: string;
+  destacados?: string;
+}
+
+const { limite = '6', destacados = '0' } = Astro.props;
+let items = await getList('proyecto');
+if (Number(destacados)) items = items.filter((p) => p.acf?.destacado);
+items = items.slice(0, Number(limite));
+const cards = await Promise.all(
+  items.map(async (p) => ({
+    p,
+    img: p.image ? await imgFromMedia(p.image, { sizes: '(min-width: 900px) 360px, 100vw', className: 'card__img' }) : '',
+  })),
+);
+---
+
+<div class="card-grid" style="--cols:3">
+  {
+    cards.map(({ p, img }) => (
+      <a class="card" href={p.path}>
+        <Fragment set:html={img} />
+        <div class="card__body">
+          <h3 class="card__title">{p.title}</h3>
+          {p.acf?.ubicacion && <p class="card__meta">{p.acf.ubicacion}</p>}
+        </div>
+      </a>
+    ))
+  }
+</div>

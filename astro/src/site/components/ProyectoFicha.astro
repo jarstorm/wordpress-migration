@@ -1,0 +1,32 @@
+---
+/** Ficha técnica de un proyecto (antes la añadía el filtro the_content de nortia-core.php). */
+import type { Entry } from '../../lib/types';
+
+interface Props {
+  entry: Entry;
+}
+
+const acf = Astro.props.entry.acf ?? {};
+const clientes: Record<string, string> = { particular: 'Particular', comunidad: 'Comunidad de vecinos', empresa: 'Empresa' };
+const filas: [string, string | undefined][] = [
+  ['Ubicación', acf.ubicacion],
+  ['Año', acf.anio],
+  ['Superficie', acf.superficie_m2 ? `${acf.superficie_m2} m²` : undefined],
+  ['Duración', acf.duracion_semanas ? `${acf.duracion_semanas} semanas` : undefined],
+  ['Presupuesto aprox.', acf.presupuesto_aprox],
+  ['Cliente', clientes[acf.cliente_tipo]],
+];
+---
+
+<dl class="ficha">
+  {
+    filas
+      .filter(([, v]) => v)
+      .map(([k, v]) => (
+        <div>
+          <dt>{k}</dt>
+          <dd>{v}</dd>
+        </div>
+      ))
+  }
+</dl>

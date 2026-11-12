@@ -1,0 +1,28 @@
+---
+/**
+ * Bloque "shortcode": si hay un componente nativo para la etiqueta se usa;
+ * si no, se pinta el HTML que devolvió WordPress (do_shortcode).
+ */
+import type { Block } from '../../lib/types';
+import { optimizeHtml } from '../../lib/images';
+import { shortcodeComponents } from '../shortcodes/registry';
+
+interface Props {
+  block: Block;
+  eager?: boolean;
+}
+
+const { block } = Astro.props;
+const items = await Promise.all(
+  (block.shortcodes ?? []).map(async (sc) => ({
+    sc,
+    Comp: shortcodeComponents[sc.tag],
+    html: shortcodeComponents[sc.tag] ? '' : await optimizeHtml(sc.rendered),
+  })),
+);
+if (!block.shortcodes?.length) {
+  items.push({ sc: null as any, Comp: undefined, html: await optimizeHtml(block.rendered) });
+}
+---
+
+{items.map(({ sc, Comp, html }) => (Comp ? <Comp {...sc.atts} shortcode={sc} /> : <Fragment set:html={html} />))}

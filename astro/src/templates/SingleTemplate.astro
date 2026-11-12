@@ -1,0 +1,69 @@
+---
+/** Plantilla genérica para páginas, entradas y cualquier tipo de contenido. */
+import type { Entry, Site } from '../lib/types';
+import Blocks from '../components/blocks/Blocks.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import Comments from '../components/Comments.astro';
+import { imgFromMedia } from '../lib/images';
+import { formatDate } from '../lib/format';
+
+interface Props {
+  entry: Entry;
+  site: Site;
+  isFront: boolean;
+}
+
+const { entry, isFront } = Astro.props;
+const isPost = entry.type === 'post';
+const hero = isPost && entry.image ? await imgFromMedia(entry.image, { eager: true, sizes: '(min-width: 900px) 860px, 100vw', className: 'entry__hero' }) : '';
+const crumbs = [{ title: 'Inicio', path: '/' }, ...(entry.archive ? [entry.archive] : []), ...entry.ancestors, ...(isFront ? [] : [{ title: entry.title, path: entry.path }])];
+const tags = entry.terms.post_tag ?? [];
+const cats = entry.terms.category ?? [];
+---
+
+<article class:list={['entry', `entry--${entry.type}`, { 'entry--front': isFront }]}>
+  {
+    !isFront && (
+      <header class="page-hero">
+        <div class="container page-hero__inner">
+          <Breadcrumbs items={crumbs} />
+          <h1 class="page-hero__title">{entry.title}</h1>
+          {isPost && (
+            <p class="entry__meta">
+              <time datetime={entry.date}>{formatDate(entry.date)}</time>
+              {entry.author && (
+                <>
+                  {' · '}
+                  <a href={entry.author.path}>{entry.author.name}</a>
+                </>
+              )}
+              {cats.map((c) => (
+                <a class="chip" href={c.path}>
+                  {c.name}
+                </a>
+              ))}
+            </p>
+          )}
+        </div>
+      </header>
+    )
+  }
+  {hero && <div class="container entry__hero-wrap"><Fragment set:html={hero} /></div>}
+  <div class:list={['entry__body', { container: !isFront }]}>
+    <slot name="before" />
+    <Blocks blocks={entry.blocks} fallbackHtml={entry.content} eagerFirst={isFront || (!hero && !isPost)} />
+    <slot name="after" />
+  </div>
+  {
+    tags.length > 0 && (
+      <footer class="container entry__tags">
+        {tags.map((t) => (
+          <a class="chip" href={t.path}>
+            #{t.name}
+          </a>
+        ))}
+      </footer>
+    )
+  }
+  {isPost && <div class="container"><Comments entry={entry} /></div>}
+</article>

@@ -1,0 +1,24 @@
+---
+import type { Summary } from '../lib/types';
+import { imgFromMedia } from '../lib/images';
+import { formatDate } from '../lib/format';
+
+interface Props {
+  item: Summary;
+  showDate?: boolean;
+  showImage?: boolean;
+  showExcerpt?: boolean;
+}
+
+const { item, showDate = true, showImage = true, showExcerpt = false } = Astro.props;
+const img = showImage && item.image ? await imgFromMedia(item.image, { sizes: '(min-width: 900px) 360px, 100vw', className: 'card__img' }) : '';
+---
+
+<article class="card">
+  {img && <a href={item.path} tabindex="-1" aria-hidden="true"><Fragment set:html={img} /></a>}
+  <div class="card__body">
+    <h3 class="card__title"><a href={item.path}>{item.title}</a></h3>
+    {showDate && item.type === 'post' && <time class="card__small" datetime={item.date}>{formatDate(item.date)}</time>}
+    {showExcerpt && item.excerpt && <p class="card__excerpt">{item.excerpt}</p>}
+  </div>
+</article>

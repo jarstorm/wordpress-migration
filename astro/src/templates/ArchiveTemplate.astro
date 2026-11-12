@@ -1,0 +1,32 @@
+---
+/** Listados: blog, archivo de un tipo de contenido, categorías, etiquetas, autores. */
+import type { Summary } from '../lib/types';
+import PostCard from '../components/PostCard.astro';
+import Pagination from '../components/Pagination.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+
+interface Props {
+  title: string;
+  intro?: string | null;
+  base: string;
+  items: Summary[];
+  page: number;
+  pages: number;
+}
+
+const { title, intro, base, items, page, pages } = Astro.props;
+---
+
+<header class="page-hero">
+  <div class="container page-hero__inner">
+    <Breadcrumbs items={[{ title: 'Inicio', path: '/' }, { title, path: base }]} />
+    <h1 class="page-hero__title">{title}{page > 1 && <span class="archive__page"> · página {page}</span>}</h1>
+    {intro && <p class="page-hero__lead">{intro}</p>}
+  </div>
+</header>
+<section class="container archive">
+  <div class="card-grid" style="--cols:3">
+    {items.map((it) => <PostCard item={it} showExcerpt />)}
+  </div>
+  <Pagination base={base} page={page} pages={pages} />
+</section>

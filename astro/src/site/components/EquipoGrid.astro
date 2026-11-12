@@ -1,0 +1,28 @@
+---
+/** [nortia_equipo] — el tipo "equipo" no es público en WordPress; se lee por el conector. */
+import { getList } from '../../lib/wp';
+import { imgFromMedia } from '../../lib/images';
+
+const people = await getList('equipo');
+const cards = await Promise.all(
+  people.map(async (p) => ({
+    p,
+    img: p.image ? await imgFromMedia(p.image, { sizes: '(min-width: 900px) 260px, 50vw', className: 'card__img card__img--square' }) : '',
+  })),
+);
+---
+
+<div class="card-grid" style="--cols:4">
+  {
+    cards.map(({ p, img }) => (
+      <div class="card">
+        <Fragment set:html={img} />
+        <div class="card__body">
+          <h3 class="card__title">{p.title}</h3>
+          {p.acf?.cargo && <p class="card__meta">{p.acf.cargo}</p>}
+          {p.acf?.anios_experiencia && <p class="card__small">{p.acf.anios_experiencia} años de experiencia</p>}
+        </div>
+      </div>
+    ))
+  }
+</div>

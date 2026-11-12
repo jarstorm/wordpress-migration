@@ -1,0 +1,66 @@
+---
+/**
+ * Formulario de Contact Form 7.
+ * Se reutiliza el HTML que genera el plugin (mismos campos y validaciones) y se
+ * envía con fetch a la API REST de Contact Form 7 en WordPress. No carga el
+ * JavaScript de CF7. Requiere CORS (lo añade el plugin headless-connector).
+ */
+import type { Shortcode } from '../../lib/types';
+import { WP_URL } from '../../lib/wp';
+
+interface Props {
+  shortcode: Shortcode;
+}
+
+const { shortcode } = Astro.props;
+// Se quita el action original (apunta a la página de WordPress).
+const html = shortcode.rendered.replace(/\saction=(["']).*?\1/, ' action="#"');
+---
+
+<div class="cf7" data-endpoint={`${WP_URL}/wp-json/contact-form-7/v1/contact-forms`}>
+  <Fragment set:html={html} />
+</div>
+
+<script>
+  document.querySelectorAll<HTMLElement>('.cf7').forEach((wrap) => {
+    const form = wrap.querySelector<HTMLFormElement>('form');
+    if (!form) return;
+    const endpoint = wrap.dataset.endpoint;
+    const output =
+      form.querySelector<HTMLElement>('.wpcf7-response-output') ??
+      form.appendChild(Object.assign(document.createElement('div'), { className: 'wpcf7-response-output' }));
+    output.setAttribute('role', 'status');
+    output.setAttribute('aria-live', 'polite');
+
+    form.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const data = new FormData(form);
+      const id = data.get('_wpcf7');
+      const button = form.querySelector<HTMLButtonElement>('[type=submit]');
+      form.querySelectorAll('.wpcf7-not-valid-tip').forEach((n) => n.remove());
+      form.querySelectorAll('[aria-invalid=true]').forEach((n) => n.setAttribute('aria-invalid', 'false'));
+      button?.setAttribute('disabled', '');
+      output.textContent = 'Enviando…';
+      output.className = 'wpcf7-response-output is-sending';
+      try {
+        const res = await fetch(`${endpoint}/${id}/feedback`, { method: 'POST', body: data });
+        const json = await res.json();
+        output.textContent = json.message ?? 'Mensaje enviado.';
+        output.className = `wpcf7-response-output is-${json.status}`;
+        for (const f of json.invalid_fields ?? []) {
+          const field = form.querySelector<HTMLElement>(`[name="${f.field}"], [name="${f.field}[]"]`);
+          if (!field) continue;
+          field.setAttribute('aria-invalid', 'true');
+          const tip = Object.assign(document.createElement('span'), { className: 'wpcf7-not-valid-tip', textContent: f.message });
+          field.closest('.wpcf7-form-control-wrap')?.appendChild(tip);
+        }
+        if (json.status === 'mail_sent') form.reset();
+      } catch {
+        output.textContent = 'No se ha podido enviar el formulario. Inténtalo de nuevo o escríbenos por email.';
+        output.className = 'wpcf7-response-output is-error';
+      } finally {
+        button?.removeAttribute('disabled');
+      }
+    });
+  });
+</script>

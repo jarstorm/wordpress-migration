@@ -1,0 +1,18 @@
+---
+/** Página de servicio: contenido + recuadro de precio, plazo e "incluye". */
+import type { Entry, Site } from '../../lib/types';
+import SingleTemplate from '../../templates/SingleTemplate.astro';
+import ServicioBox from '../components/ServicioBox.astro';
+
+interface Props {
+  entry: Entry;
+  site: Site;
+  isFront: boolean;
+}
+
+const { entry, site, isFront } = Astro.props;
+---
+
+<SingleTemplate entry={entry} site={site} isFront={isFront}>
+  <ServicioBox slot="before" entry={entry} />
+</SingleTemplate>

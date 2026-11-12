@@ -1,0 +1,48 @@
+---
+/** Proyecto: ficha técnica + contenido + antes/después + llamada a la acción. */
+import type { Entry, Site } from '../../lib/types';
+import SingleTemplate from '../../templates/SingleTemplate.astro';
+import ProyectoFicha from '../components/ProyectoFicha.astro';
+import { imgFromMedia } from '../../lib/images';
+
+interface Props {
+  entry: Entry;
+  site: Site;
+  isFront: boolean;
+}
+
+const { entry, site, isFront } = Astro.props;
+const acf = entry.acf ?? {};
+const sizes = '(min-width: 900px) 430px, 100vw';
+const antes = acf.imagen_antes ? await imgFromMedia(acf.imagen_antes, { sizes }) : '';
+const despues = acf.imagen_despues ? await imgFromMedia(acf.imagen_despues, { sizes }) : '';
+const hero = entry.image ? await imgFromMedia(entry.image, { eager: true, sizes: '(min-width: 900px) 860px, 100vw', className: 'entry__hero' }) : '';
+---
+
+<SingleTemplate entry={entry} site={site} isFront={isFront}>
+  <Fragment slot="before">
+    {hero && <Fragment set:html={hero} />}
+    <ProyectoFicha entry={entry} />
+  </Fragment>
+  <Fragment slot="after">
+    {
+      (antes || despues) && (
+        <div class="antes-despues">
+          {antes && (
+            <figure>
+              <Fragment set:html={antes} />
+              <figcaption>Antes</figcaption>
+            </figure>
+          )}
+          {despues && (
+            <figure>
+              <Fragment set:html={despues} />
+              <figcaption>Después</figcaption>
+            </figure>
+          )}
+        </div>
+      )
+    }
+    <p><a class="btn" href="/contacto/">¿Quieres algo parecido? Pide presupuesto</a></p>
+  </Fragment>
+</SingleTemplate>

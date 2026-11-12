@@ -1,0 +1,74 @@
+---
+import { getMenu, getSite } from '../lib/wp';
+import { imgFromMedia } from '../lib/images';
+import { siteConfig } from '../site/config';
+
+interface Props {
+  path: string;
+}
+
+const { path } = Astro.props;
+const site = await getSite();
+const items = await getMenu('primary');
+const logo = site.logo ? await imgFromMedia(site.logo, { eager: true, sizes: '180px', className: 'logo__img' }) : '';
+const isActive = (p: string) => (p === '/' ? path === '/' : path.startsWith(p));
+const { cta } = siteConfig;
+---
+
+<header class="site-header" data-header>
+  <div class="container site-header__inner">
+    <a class="logo" href="/" aria-label={`${site.name}, inicio`}>
+      {logo ? <Fragment set:html={logo} /> : <span class="logo__text">{site.name}</span>}
+    </a>
+    <nav class="site-nav" aria-label="Principal">
+      <ul id="menu-principal" class="nav">
+        {
+          items.map((it) => (
+            <li class:list={['nav__item', { 'has-children': it.children.length }]}>
+              <a href={it.path} target={it.target ?? undefined} aria-current={path === it.path ? 'page' : undefined} class:list={{ active: isActive(it.path) }}>
+                {it.title}
+                {it.children.length > 0 && (
+                  <svg class="nav__chevron" width="12" height="12" viewBox="0 0 12 12" aria-hidden="true">
+                    <path d="M3 4.5 6 7.5 9 4.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                )}
+              </a>
+              {it.children.length > 0 && (
+                <ul class="nav__sub">
+                  {it.children.map((c) => (
+                    <li>
+                      <a href={c.path} aria-current={path === c.path ? 'page' : undefined}>
+                        {c.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))
+        }
+        {cta && <li class="nav__cta-mobile"><a class="btn" href={cta.href}>{cta.label}</a></li>}
+      </ul>
+    </nav>
+    <div class="site-header__actions">
+      {cta && <a class="btn btn--sm site-header__cta" href={cta.href}>{cta.label}</a>}
+      <button class="nav-toggle" aria-expanded="false" aria-controls="menu-principal">
+        <span class="sr-only">Abrir menú</span>
+        <span class="nav-toggle__bars" aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+</header>
+
+<script>
+  const header = document.querySelector<HTMLElement>('[data-header]');
+  const btn = header?.querySelector<HTMLButtonElement>('.nav-toggle');
+  btn?.addEventListener('click', () => {
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    btn.setAttribute('aria-expanded', String(!open));
+    header!.classList.toggle('is-open', !open);
+  });
+  const onScroll = () => header?.classList.toggle('is-scrolled', window.scrollY > 8);
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+</script>

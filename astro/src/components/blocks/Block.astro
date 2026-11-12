@@ -1,0 +1,53 @@
+---
+/**
+ * Renderiza un bloque de Gutenberg.
+ *  1. Si hay un componente propio para el bloque (blockComponents), se usa.
+ *  2. Si es un contenedor estático (columns, column, group…), se recorre su
+ *     innerContent y se renderizan los bloques hijos de forma recursiva.
+ *  3. En cualquier otro caso se usa el HTML que generó WordPress ("rendered").
+ * En todos los casos las imágenes de WordPress se optimizan.
+ */
+import type { Block } from '../../lib/types';
+import { optimizeHtml } from '../../lib/images';
+import { blockComponents } from './registry';
+
+interface Props {
+  block: Block;
+  eager?: boolean;
+}
+
+const { block, eager = false } = Astro.props;
+const Custom = blockComponents[block.name];
+
+type Part = { html: string } | { block: Block; first: boolean };
+let parts: Part[] = [];
+let html = '';
+
+if (!Custom) {
+  if (block.innerBlocks.length && !block.dynamic) {
+    let i = 0;
+    for (const chunk of block.innerContent) {
+      if (chunk === null) {
+        const child = block.innerBlocks[i++];
+        if (child) parts.push({ block: child, first: i === 1 });
+      } else if (chunk.trim()) {
+        parts.push({ html: await optimizeHtml(chunk, { eager }) });
+      }
+    }
+  } else {
+    html = await optimizeHtml(block.rendered, { eager });
+  }
+}
+---
+
+{
+  Custom ? (
+    <Custom block={block} eager={eager} />
+  ) : parts.length ? (
+    parts.map((p) =>
+      'html' in p ? <Fragment set:html={p.html} /> : <Astro.self block={p.block} eager={eager && p.first} />,
+    )
+  ) : (
+    <Fragment set:html={html} />
+  )
+}

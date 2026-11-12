@@ -1,0 +1,20 @@
+---
+import type { Block as BlockType } from '../../lib/types';
+import Block from './Block.astro';
+import { optimizeHtml } from '../../lib/images';
+
+interface Props {
+  blocks: BlockType[] | null;
+  /** HTML completo de WordPress, por si el contenido no usa bloques (editor clásico). */
+  fallbackHtml?: string;
+  /** La primera imagen se carga con prioridad (portadas con imagen grande). */
+  eagerFirst?: boolean;
+}
+
+const { blocks, fallbackHtml = '', eagerFirst = false } = Astro.props;
+const classic = !blocks?.length ? await optimizeHtml(fallbackHtml, { eager: eagerFirst }) : '';
+---
+
+<div class="entry-content">
+  {blocks?.length ? blocks.map((b, i) => <Block block={b} eager={eagerFirst && i === 0} />) : <Fragment set:html={classic} />}
+</div>
